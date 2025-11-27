@@ -11,14 +11,22 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing API key or prompt" });
     }
 
-    // Filtruojame JSON įrašus, kuriuose yra vartotojo klausimo žodžiai
+    // Filtruojame JSON įrašus pagal vartotojo klausimo žodžius
     const relevant = zodynas.filter(item => question.includes(item.seno_zodzio_forma));
 
-    // Formuojame prompt, kad DI API galėtų panaudoti JSON duomenis
+    // Formuojame patobulintą prompt
     const prompt = `
 Vartotojas klausia: "${question}".
-Duomenų bazė: ${JSON.stringify(relevant)}
-Atsakyk kaip chatbot, naudodamas šią informaciją.
+Duomenų bazė (naudojami tik stulpeliai: senovinis_zodis, dabartine_forma, paaiskinimas): ${JSON.stringify(relevant)}
+
+Užduotis DI API:
+1. Jei yra duomenų, pateik atsakymą aiškiai taip:
+   Senovinis žodis: ...
+   Dabartinė forma: ...
+   Paaiškinimas: ...
+2. Jei paaiškinimas nėra dabartine bendrine lietuvių kalba, išversk jį į dabartinę lietuvių kalbą.
+3. Jei duomenų nėra, atsakyk mandagiai: "Atsiprašau, neradau informacijos apie šį žodį."
+4. Nerašyk nieko daugiau, tik atsakymą.
 `;
 
     try {
