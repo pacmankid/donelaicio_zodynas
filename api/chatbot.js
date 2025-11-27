@@ -1,5 +1,11 @@
-const zodynas = require('../data/zodynascsvjson.json');
+const path = require('path');
+const fs = require('fs');
 const fetch = require('node-fetch');
+
+// 🔧 Nuskaitome tavo csvjson.json failą
+const filePath = path.join(process.cwd(), "data", "csvjson.json");
+const rawData = fs.readFileSync(filePath, "utf8");
+const zodynas = JSON.parse(rawData);
 
 module.exports = async function handler(req, res) {
     if (req.method !== "POST") {
@@ -12,12 +18,13 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "Missing API key or prompt" });
     }
 
-    console.log("JSON turinys:", zodynas);
     console.log("Vartotojo klausimas:", question);
 
-    const relevant = zodynas.filter(item =>
-        question.toLowerCase().includes(item.seno_zodzio_forma.toLowerCase().trim())
-    );
+    // 🔍 Filtras pagal tikslų stulpelio pavadinimą: "Senovinis žodis"
+    const relevant = zodynas.filter(item => {
+        const senas = item["Senovinis žodis"]?.toString().toLowerCase().trim() || "";
+        return question.toLowerCase().includes(senas);
+    });
 
     console.log("Rasti įrašai:", relevant);
 
@@ -27,12 +34,16 @@ module.exports = async function handler(req, res) {
 
     const promptToDI = `
 Vartotojas klausia: "${question}".
-Duomenų bazė: ${JSON.stringify(relevant)}
 
-Atsakyk aiškiai:
+Radau šiuos įrašus iš duomenų bazės:
+
+${JSON.stringify(relevant)}
+
+Atsakyk aiškiai ir struktūruotai:
 1. Senovinis žodis
-2. Dabartinė forma
+2. Dabartinis žodis
 3. Paaiškinimas (dabartine lietuvių kalba)
+4. Reikšmė
 `;
 
     try {
@@ -43,7 +54,7 @@ Atsakyk aiškiai:
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "gpt-4",
+                model: "gpt-4o-mini",
                 messages: [{ role: "user", content: promptToDI }]
             })
         });
@@ -58,4 +69,4 @@ Atsakyk aiškiai:
         console.error("DI API klaida:", error);
         return res.status(500).json({ error: "Server error", details: error.toString() });
     }
-}
+};
