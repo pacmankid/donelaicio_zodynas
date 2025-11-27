@@ -44,6 +44,8 @@
 
     <script>
         const chatbox = document.getElementById('chatbox');
+        const userInput = document.getElementById('userQuestion');
+        const sendBtn = document.getElementById('sendBtn');
 
         function addMessage(text, sender) {
             const msgDiv = document.createElement('div');
@@ -53,9 +55,9 @@
             chatbox.scrollTop = chatbox.scrollHeight;
         }
 
-        document.getElementById('sendBtn').addEventListener('click', async () => {
+        async function sendMessage() {
             const apiKey = document.getElementById('apiKey').value;
-            const question = document.getElementById('userQuestion').value;
+            const question = userInput.value;
 
             if (!apiKey || !question) {
                 alert('Įveskite API raktą ir klausimą');
@@ -63,7 +65,7 @@
             }
 
             addMessage(question, 'user');
-            document.getElementById('userQuestion').value = '';
+            userInput.value = '';
 
             try {
                 const response = await fetch('/api/chatbot', {
@@ -73,15 +75,19 @@
                 });
 
                 const data = await response.json();
-                // Paimame tik atsakymą iš choices[0].message.content
-                const answer = data.choices && data.choices[0]?.message?.content
-                    ? data.choices[0].message.content
-                    : "Įvyko klaida gaunant atsakymą";
+                const answer = data.answer || "Įvyko klaida gaunant atsakymą";
                 addMessage(answer, 'bot');
             } catch (err) {
                 console.error(err);
                 addMessage('Įvyko klaida', 'bot');
             }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        // Siuntimas paspaudus Enter
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') sendMessage();
         });
     </script>
 </body>
