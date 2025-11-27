@@ -20,8 +20,13 @@ export default async function handler(req, res) {
     console.log("Vartotojo klausimas:", question);
     console.log("Rasti JSON įrašai:", relevant);
 
-    // Formuojame patobulintą prompt
-    const prompt = `
+    // Jei nerasta įrašų, grąžiname mandagų atsakymą be DI API kvietimo
+    if (relevant.length === 0) {
+        return res.status(200).json({ answer: "Atsiprašau, neradau informacijos apie šį žodį." });
+    }
+
+    // Formuojame patobulintą prompt DI API
+    const promptToDI = `
 Vartotojas klausia: "${question}".
 Duomenų bazė (naudojami tik stulpeliai: senovinis_zodis, dabartine_forma, paaiskinimas): ${JSON.stringify(relevant)}
 
@@ -31,8 +36,7 @@ Užduotis DI API:
    Dabartinė forma: ...
    Paaiškinimas: ...
 2. Jei paaiškinimas nėra dabartine bendrine lietuvių kalba, išversk jį į dabartinę lietuvių kalbą.
-3. Jei duomenų nėra, atsakyk mandagiai: "Atsiprašau, neradau informacijos apie šį žodį."
-4. Nerašyk nieko daugiau, tik atsakymą.
+3. Nerašyk nieko daugiau, tik atsakymą.
 `;
 
     try {
@@ -44,7 +48,7 @@ Užduotis DI API:
             },
             body: JSON.stringify({
                 model: "gpt-4",
-                messages: [{ role: "user", content: prompt }]
+                messages: [{ role: "user", content: promptToDI }]
             })
         });
 
@@ -58,6 +62,7 @@ Užduotis DI API:
         return res.status(200).json({ answer });
 
     } catch (error) {
+        console.error("DI API klaida:", error);
         return res.status(500).json({ error: "Server error", details: error.toString() });
     }
 }
