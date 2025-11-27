@@ -10,14 +10,16 @@ export default async function handler(req, res) {
     }
 
     try {
-        // ČIA įrašyk tikrą DI API endpoint
-        const response = await fetch("https://api.tavo-di.com/v1/query", {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${apiKey}`
             },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({
+                model: "gpt-4",
+                messages: [{ role: "user", content: prompt }]
+            })
         });
 
         const data = await response.json();
