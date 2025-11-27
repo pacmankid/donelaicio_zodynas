@@ -11,8 +11,14 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing API key or prompt" });
     }
 
-    // Filtruojame JSON įrašus pagal vartotojo klausimo žodžius
-    const relevant = zodynas.filter(item => question.includes(item.seno_zodzio_forma));
+    // Filtruojame JSON įrašus pagal vartotojo klausimo žodžius (case-insensitive)
+    const relevant = zodynas.filter(item =>
+        question.toLowerCase().includes(item.seno_zodzio_forma.toLowerCase().trim())
+    );
+
+    // Debug: patikriname, ar rasti įrašai
+    console.log("Vartotojo klausimas:", question);
+    console.log("Rasti JSON įrašai:", relevant);
 
     // Formuojame patobulintą prompt
     const prompt = `
