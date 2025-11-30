@@ -10,8 +10,14 @@
 
 <div class="flex flex-1 h-screen max-w-5xl mx-auto w-full relative">
 
+    <!-- SIDEBAR ISTORIJA -->
+    <div id="historySidebar" class="w-64 bg-gray-800 border-r border-gray-700 p-3 flex flex-col absolute top-0 left-0 h-full transform -translate-x-full transition-transform duration-300 z-50">
+        <h2 class="text-lg font-bold mb-3">Ieškotų žodžių istorija</h2>
+        <div id="historyList" class="flex-1 overflow-y-auto space-y-2"></div>
+    </div>
+
     <!-- CHAT + INPUT AREA -->
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col ml-0 lg:ml-64 transition-all duration-300" id="chatContainer">
 
         <!-- API INPUT -->
         <div class="p-3">
@@ -26,14 +32,8 @@
         <div class="p-3 bg-gray-800 border-t border-gray-700 flex items-center gap-2">
             <input id="userQuestion" type="text" placeholder="Rašykite klausimą…" class="flex-1 p-3 rounded-lg bg-gray-700 text-gray-100 focus:outline-none">
             <button id="sendBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg">Siųsti</button>
-            <button id="toggleHistory" class="ml-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg">Istorija</button>
+            <button id="toggleHistory" class="ml-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg z-50">Istorija</button>
         </div>
-    </div>
-
-    <!-- SIDEBAR ISTORIJA -->
-    <div id="historySidebar" class="w-64 bg-gray-800 border-l border-gray-700 p-3 flex flex-col absolute top-0 right-0 h-full transform translate-x-full transition-transform duration-300 z-50">
-        <h2 class="text-lg font-bold mb-3">Ieškotų žodžių istorija</h2>
-        <div id="historyList" class="flex-1 overflow-y-auto space-y-2"></div>
     </div>
 </div>
 
@@ -45,10 +45,18 @@
     const historyList = document.getElementById("historyList");
     const historySidebar = document.getElementById("historySidebar");
     const toggleHistoryBtn = document.getElementById("toggleHistory");
+    const chatContainer = document.getElementById("chatContainer");
 
     // TOGGLE HISTORY SIDEBAR
     toggleHistoryBtn.addEventListener("click", () => {
-        historySidebar.classList.toggle('translate-x-full');
+        const isHidden = historySidebar.classList.contains('-translate-x-full');
+        if (isHidden) {
+            historySidebar.classList.remove('-translate-x-full');
+            chatContainer.classList.add('ml-64');
+        } else {
+            historySidebar.classList.add('-translate-x-full');
+            chatContainer.classList.remove('ml-64');
+        }
     });
 
     // ISTORIJOS IŠSAUGOJIMAS CHAT + WORDS
