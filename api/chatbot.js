@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 
-// Nuskaityti žodyną iš JSON failo
 const filePath = path.join(process.cwd(), "data", "csvjson.json");
 const rawData = fs.readFileSync(filePath, "utf8");
 const zodynas = JSON.parse(rawData);
@@ -11,7 +10,7 @@ module.exports = async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const { apiKey, prompt: question, firstMessage } = req.body;
+    const { apiKey, prompt: question } = req.body;
 
     if (!apiKey || !question) {
         return res.status(400).json({ error: "Įveskite API raktą ir klausimą" });
@@ -19,27 +18,33 @@ module.exports = async function handler(req, res) {
 
     console.log("Vartotojo klausimas:", question);
 
-    // Filtruojame tik reikiamus žodžius iš duomenų bazės
-    const q = question.toLowerCase();
-    const relevant = zodynas.filter(item => {
+    // Filtruojame tik tuos įrašus, kurie tikrai susiję su klausimu
+    let relevant = zodynas.filter(item => {
         const senas = item["Senovinis žodis"]?.toLowerCase().trim() || "";
         const dabartinis = item["Dabartinis žodis"]?.toLowerCase().trim() || "";
+        const q = question.toLowerCase();
         return q.includes(senas) || q.includes(dabartinis);
     });
 
-    console.log("Rasti įrašai:", relevant);
+    // Siunčiame tik pirmus 5 įrašus, kad sumažinti tokenų kiekį
+    relevant = relevant.slice(0, 5);
 
+    // Jei nerandame, atsakome iš karto
     if (relevant.length === 0) {
         return res.status(200).json({ answer: "Atsiprašau, neradau informacijos apie šį žodį." });
     }
 
-    // Formuojame promptą DI modeliui
-    const promptToDI = `
-${firstMessage ? 'Sveiki! Aš Konstantinas Sirvydas. Malonu jus matyti.' : ''}
+    // Sukuriame tik reikalingą informaciją DI modeliui
+    const filteredData = relevant.map(item => ({
+        senas: item["Senovinis žodis"],
+        dabartinis: item["Dabartinis žodis"],
+        reiksme: item["Reikšmė"]
+    }));
 
+    const promptToDI = `
 Vartotojas klausia: "${question}"
 
-${relevant.length > 0 ? `Radau duomenų bazės įrašą: ${JSON.stringify(relevant)}` : ''}
+Radau duomenų bazės įrašą: ${JSON.stringify(filteredData)}
 
 Instrukcijos DI modeliui:
 
@@ -69,7 +74,7 @@ Tekstas turi būti natūralus, pastraipomis, kaip tikras pokalbis.
             body: JSON.stringify({
                 model: "gpt-4o-mini",
                 messages: [{ role: "user", content: promptToDI }],
-                max_tokens: 600 // sumažiname išvesties apimtį, kad nesikeltų klaidų
+                max_tokens: 500 // sumažinome, kad mažiau apkrautų
             })
         });
 
