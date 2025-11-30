@@ -2,136 +2,107 @@
 <html lang="lt" class="dark">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sirvydo Žodynas – Chatbot</title>
+    <title>Sirvydo žodynas • Chatbot</title>
+
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#0079ff",
+                        bgLight: "#f5f7fa",
+                        bgDark: "#1e1f24",
+                        msgBot: "#32343a"
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-900 text-gray-200 min-h-screen flex flex-col">
 
-<div class="flex flex-1 h-screen max-w-5xl mx-auto w-full relative">
+<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-gray-100 transition-colors duration-300">
 
-    <!-- SIDEBAR ISTORIJA -->
-    <div id="historySidebar" class="w-64 bg-gray-800 border-r border-gray-700 p-3 flex flex-col absolute top-0 left-0 h-full transform -translate-x-full transition-transform duration-300 z-50">
-        <h2 class="text-lg font-bold mb-3">Ieškotų žodžių istorija</h2>
-        <div id="historyList" class="flex-1 overflow-y-auto space-y-2"></div>
+<div class="max-w-3xl mx-auto h-screen flex flex-col p-4">
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-bold">Sirvydo žodynas • Chatbot</h1>
+        <button id="toggleTheme"
+            class="px-3 py-1 rounded-lg bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+            🌙 / ☀️
+        </button>
     </div>
 
-    <!-- CHAT + INPUT AREA -->
-    <div class="flex-1 flex flex-col ml-0 lg:ml-64 transition-all duration-300" id="chatContainer">
+    <!-- API INPUT -->
+    <label class="text-sm">Įveskite savo DI API raktą:</label>
+    <input type="text" id="apiKey"
+        class="w-full p-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 mb-2"
+        placeholder="API raktas">
 
-        <!-- API INPUT -->
-        <div class="p-3">
-            <label class="text-sm mb-1 block">Įveskite DI API raktą:</label>
-            <input type="text" id="apiKey" placeholder="API raktas" class="w-full p-3 rounded-lg bg-gray-700 text-gray-100 focus:outline-none">
-        </div>
-
-        <!-- CHAT WINDOW -->
-        <div id="chatbox" class="flex-1 overflow-y-auto p-4 space-y-4" style="height: calc(100vh - 180px);"></div>
-
-        <!-- INPUT BAR -->
-        <div class="p-3 bg-gray-800 border-t border-gray-700 flex items-center gap-2">
-            <input id="userQuestion" type="text" placeholder="Rašykite klausimą…" class="flex-1 p-3 rounded-lg bg-gray-700 text-gray-100 focus:outline-none">
-            <button id="sendBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg">Siųsti</button>
-            <button id="toggleHistory" class="ml-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg z-50">Istorija</button>
-        </div>
+    <!-- CHATBOX -->
+    <div id="chatbox"
+        class="flex-1 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl p-4 shadow-inner flex flex-col gap-4">
     </div>
+
+    <!-- INPUT BAR -->
+    <div class="flex mt-3 gap-2">
+        <input type="text" id="userQuestion"
+            class="flex-1 p-3 rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-900"
+            placeholder="Įveskite klausimą...">
+
+        <button id="sendBtn"
+            class="px-5 py-3 bg-primary text-white rounded-xl hover:bg-blue-600 transition">
+            Siųsti
+        </button>
+    </div>
+
 </div>
 
 <script>
-    const chatbox = document.getElementById("chatbox");
-    const userInput = document.getElementById("userQuestion");
-    const sendBtn = document.getElementById("sendBtn");
-    const apiKeyInput = document.getElementById("apiKey");
-    const historyList = document.getElementById("historyList");
-    const historySidebar = document.getElementById("historySidebar");
-    const toggleHistoryBtn = document.getElementById("toggleHistory");
-    const chatContainer = document.getElementById("chatContainer");
+    const chatbox = document.getElementById('chatbox');
+    const userInput = document.getElementById('userQuestion');
+    const sendBtn = document.getElementById('sendBtn');
+    const toggleTheme = document.getElementById('toggleTheme');
 
-    // TOGGLE HISTORY SIDEBAR
-    toggleHistoryBtn.addEventListener("click", () => {
-        const isHidden = historySidebar.classList.contains('-translate-x-full');
-        if (isHidden) {
-            historySidebar.classList.remove('-translate-x-full');
-            chatContainer.classList.add('ml-64');
-        } else {
-            historySidebar.classList.add('-translate-x-full');
-            chatContainer.classList.remove('ml-64');
-        }
-    });
+    /* DARK MODE */
+    toggleTheme.addEventListener('click', () =>
+        document.documentElement.classList.toggle('dark')
+    );
 
-    // ISTORIJOS IŠSAUGOJIMAS CHAT + WORDS
-    function saveHistory() {
-        localStorage.setItem("sirvydas_history", chatbox.innerHTML);
-        const words = Array.from(historyList.children).map(el => el.textContent);
-        localStorage.setItem("sirvydas_words", JSON.stringify(words));
-    }
-
-    function loadHistory() {
-        const history = localStorage.getItem("sirvydas_history");
-        if (history) chatbox.innerHTML = history;
-
-        const words = JSON.parse(localStorage.getItem("sirvydas_words") || '[]');
-        words.forEach(word => {
-            const el = document.createElement('div');
-            el.className = 'p-2 bg-gray-700 rounded text-sm cursor-pointer hover:bg-gray-600';
-            el.textContent = word;
-            historyList.appendChild(el);
-        });
-        chatbox.scrollTop = chatbox.scrollHeight;
-    }
-    loadHistory();
-
-    async function typeWriterEffect(element, text, speed = 15) {
-        for (let i = 0; i < text.length; i++) {
-            element.innerHTML += text[i];
-            chatbox.scrollTop = chatbox.scrollHeight; // slinkimas į apačią rašymo metu
-            await new Promise(res => setTimeout(res, speed));
-        }
-    }
-
-    function addMessage(text, sender) {
-        const wrapper = document.createElement("div");
-        wrapper.className = `flex items-start gap-3 ${sender === 'user' ? 'justify-end' : ''}`;
+    /* ADD MESSAGE */
+    function addMessage(text, sender = "bot") {
+        const wrap = document.createElement("div");
+        wrap.className = `flex items-start gap-3 max-w-[85%] ${sender === "user" ? "ml-auto flex-row-reverse" : ""}`;
 
         const avatar = document.createElement("div");
-        avatar.className = "w-10 h-10 rounded-full overflow-hidden flex-shrink-0";
-        if (sender === 'user') {
-            avatar.innerHTML = `<div class='w-full h-full bg-blue-600 text-white flex items-center justify-center rounded-full'>🧑</div>`;
-        } else {
-            avatar.innerHTML = `<img src='https://upload.wikimedia.org/wikipedia/commons/4/43/Konstanty_Szyrwid.PNG' class='w-full h-full object-cover'>`;
-        }
+        avatar.className = "w-10 h-10 rounded-full flex items-center justify-center text-xl";
+        avatar.textContent = sender === "user" ? "🧑" : "👤";
+        avatar.classList.add(sender === "user" ? "bg-primary" : "bg-gray-300", "dark:bg-gray-700");
 
         const bubble = document.createElement("div");
-        bubble.className = `max-w-[75%] p-3 rounded-xl shadow-md leading-relaxed ${sender === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-700 text-gray-100 rounded-bl-none'}`;
+        bubble.className = `
+            p-3 rounded-xl text-sm leading-relaxed shadow
+            ${sender === "user" ? "bg-primary text-white" : "bg-gray-200 dark:bg-msgBot"}
+        `;
+        bubble.textContent = text;
 
-        if (sender === 'user') {
-            wrapper.appendChild(bubble);
-            wrapper.appendChild(avatar);
-            bubble.textContent = text;
-            chatbox.appendChild(wrapper);
+        wrap.appendChild(avatar);
+        wrap.appendChild(bubble);
+        chatbox.appendChild(wrap);
 
-            // Įrašo į žodžių istoriją
-            const el = document.createElement('div');
-            el.className = 'p-2 bg-gray-700 rounded text-sm cursor-pointer hover:bg-gray-600';
-            el.textContent = text;
-            historyList.appendChild(el);
-
-            chatbox.scrollTop = chatbox.scrollHeight;
-            saveHistory();
-            return;
-        }
-
-        wrapper.appendChild(avatar);
-        wrapper.appendChild(bubble);
-        chatbox.appendChild(wrapper);
         chatbox.scrollTop = chatbox.scrollHeight;
-        typeWriterEffect(bubble, text).then(saveHistory);
     }
 
+    /* SEND MESSAGE */
     async function sendMessage() {
+        const apiKey = document.getElementById('apiKey').value.trim();
         const question = userInput.value.trim();
-        const apiKey = apiKeyInput.value.trim();
-        if (!question || !apiKey) {
+
+        if (!apiKey || !question) {
             alert("Įveskite API raktą ir klausimą");
             return;
         }
@@ -139,7 +110,13 @@
         addMessage(question, "user");
         userInput.value = "";
 
-        addMessage("…", "bot");
+        // Typing indicator
+        const typing = document.createElement("div");
+        typing.id = "typing";
+        typing.className = "text-gray-500 dark:text-gray-400 text-sm italic";
+        typing.textContent = "Sirvydas mąsto...";
+        chatbox.appendChild(typing);
+        chatbox.scrollTop = chatbox.scrollHeight;
 
         try {
             const response = await fetch("/api/chatbot", {
@@ -149,18 +126,13 @@
             });
 
             const data = await response.json();
-            const last = chatbox.lastChild.querySelector('div:nth-child(2)');
-            last.innerHTML = "";
-            if (!data.answer) {
-                typeWriterEffect(last, "⚠ Įvyko klaida. Patikrinkite API atsakymą.");
-                return;
-            }
-            typeWriterEffect(last, data.answer);
-        } catch (err) {
-            console.error(err);
-            const last = chatbox.lastChild.querySelector('div:nth-child(2)');
-            last.innerHTML = "";
-            typeWriterEffect(last, "⚠ Nepavyko susisiekti su serveriu.");
+            const answer = data.answer || "Įvyko klaida.";
+
+            typing.remove();
+            addMessage(answer, "bot");
+        } catch {
+            typing.remove();
+            addMessage("Įvyko klaida.", "bot");
         }
     }
 
@@ -169,5 +141,6 @@
         if (e.key === "Enter") sendMessage();
     });
 </script>
+
 </body>
 </html>
