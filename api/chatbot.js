@@ -12,45 +12,34 @@ module.exports = async function handler(req, res) {
 
     const { apiKey, prompt: question } = req.body;
 
-    console.log("Vartotojo klausimas:", question);
-
-    const relevant = zodynas.filter(item => {
-        const senas = item["Senovinis žodis"]?.toLowerCase().trim() || "";
-        return question.toLowerCase().includes(senas);
-    });
-
-    console.log("Rasti įrašai:", relevant);
-
-    if (relevant.length === 0) {
-        return res.status(200).json({ answer: "Atsiprašau, neradau informacijos apie šį žodį." });
+    if (!apiKey || !question) {
+        return res.status(400).json({ error: "Įveskite API raktą ir klausimą" });
     }
 
+    // Patikriname, ar klausimas atitinka žodžius duomenų bazėje
+    const relevant = zodynas.filter(item => {
+        const senas = item["Senovinis žodis"]?.toLowerCase().trim() || "";
+        const dabartinis = item["Dabartinis žodis"]?.toLowerCase().trim() || "";
+        return question.toLowerCase().includes(senas) || question.toLowerCase().includes(dabartinis);
+    });
+
+    // Pirmas pasisveikinimas tik jei pirmas klausimas
+    const firstMessage = !req.headers['x-first-message'] || req.headers['x-first-message'] === 'true';
+
     const promptToDI = `
-Sveiki! Aš Konstantinas Sirvydas. Malonu jus matyti. Galime kartu nagrinėti senovinius lietuvių žodžius, jų reikšmes, istoriją ir pavyzdžius.
+${firstMessage ? 'Sveiki! Aš Konstantinas Sirvydas. Malonu jus matyti.' : ''}
 
 Vartotojas klausia: "${question}"
 
-Radau duomenų bazės įrašą: ${JSON.stringify(relevant)}
+${relevant.length > 0 ? `Radau duomenų bazės įrašą: ${JSON.stringify(relevant)}` : ''}
 
 Instrukcijos DI modeliui:
 
-- Jei klausimas apie žodį (senovinį arba dabartinį):
-  Pateik atsakymą tarsi dėstytojas kalbėtų su studentu, pastraipomis, įtraukiamai.
-  Paaiškink žodžio reikšmę aiškiai lietuviškai, moksliškai tiksliai, bet suprantamai.
-  Pateik 2–3 pavyzdinius sakinius su senoviniu žodžiu, skirtingo tono: informatyvus, vaizdingas.
+- Jei klausimas apie žodį, naudok duomenų bazę, paaiškink kaip dėstytojas pasako studentui: natūraliai, įtraukiamai, pastraipomis, su 2-3 pavyzdiniais sakiniais, pateik senovinius žodžius ir jų reikšmes.
+- Jei klausimas apie Konstantiną Sirvydą, atsakyk draugiškai ir įdomiai, tarsi istoriją pasakotum.
+- Jei klausimas neatitinka nė vienos kategorijos, atsakyk neutraliu stiliumi.
 
-- Jei klausimas apie Konstantiną Sirvydą ar jo gyvenimą:
-  Atsakyk draugiškai ir moksliniu tonu, pateik įdomių faktų ar kontekstą.
-
-- Jei klausimas neatitinka nė vienos kategorijos:
-  Atsakyk neutraliu, aiškiu stiliumi, pakviesk vartotoją klausti apie žodžius ar Sirvydą.
-
-Papildomos taisyklės:
-
-- Tekstas turi būti natūralus, pastraipomis, kaip tikras pokalbis.
-- Nenaudoti sąrašų numeracijos ar ##.
-- Jei duomenų bazėje tik fragmentinė informacija, naudok tik ją, stilistiškai papildyk tik tiek, kiek būtina aiškumui.
-- Pasisveikinimas tik jei tai pirmas vartotojo klausimas sesijoje.
+Tekstas turi būti natūralus, pastraipomis, kaip tikras pokalbis.
 `;
 
     try {
@@ -67,8 +56,6 @@ Papildomos taisyklės:
         });
 
         const data = await response.json();
-        console.log("OpenAI atsakymas:", data);
-
         const answer = data.choices?.[0]?.message?.content || "Įvyko klaida gaunant atsakymą";
         return res.status(200).json({ answer });
 
