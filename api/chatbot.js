@@ -2,7 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const fetch = require('node-fetch');
 
-// 🔧 Teisingai nuskaitome csvjson.json failą
 const filePath = path.join(process.cwd(), "data", "csvjson.json");
 const rawData = fs.readFileSync(filePath, "utf8");
 const zodynas = JSON.parse(rawData);
@@ -12,16 +11,15 @@ module.exports = async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const { apiKey, prompt: question } = req.body;
+    // Patikriname, kad body egzistuotų
+    const { apiKey, prompt: question } = req.body || {};
 
     if (!apiKey || !question) {
         return res.status(400).json({ error: "Missing API key or prompt" });
     }
 
-    console.log("JSON turinys:", zodynas);
     console.log("Vartotojo klausimas:", question);
 
-    // 🔍 Pritaikytas filtravimas, kad nelūžtų jei stulpelių pavadinimai kitokie
     const relevant = zodynas.filter(item => {
         const senas = item["seno-zodzio-forma"] || item.seno_zodzio_forma || item.senas || "";
         return question.toLowerCase().includes(senas.toLowerCase().trim());
@@ -57,13 +55,12 @@ Atsakyk aiškiai:
         });
 
         const data = await response.json();
-        console.log("OpenAI atsakymas:", data);
+        const answer = data?.choices?.[0]?.message?.content || "Įvyko klaida gaunant atsakymą";
 
-        const answer = data.choices?.[0]?.message?.content || "Įvyko klaida gaunant atsakymą";
         return res.status(200).json({ answer });
 
     } catch (error) {
         console.error("DI API klaida:", error);
         return res.status(500).json({ error: "Server error", details: error.toString() });
     }
-}
+};
