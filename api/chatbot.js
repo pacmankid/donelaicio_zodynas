@@ -16,30 +16,39 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "Įveskite API raktą ir klausimą" });
     }
 
-    console.log("Vartotojo klausimas:", question);
+    const q = question.toLowerCase();
 
+    // Filtruojame tik tuos įrašus, kuriuose vartotojo klausimas sutampa su senoviniu ar dabartiniu žodžiu
     const relevant = zodynas.filter(item => {
         const senas = item["Senovinis žodis"]?.toLowerCase().trim() || "";
         const dabartinis = item["Dabartinis žodis"]?.toLowerCase().trim() || "";
-        const q = question.toLowerCase();
         return q.includes(senas) || q.includes(dabartinis);
     });
-
-    console.log("Rasti įrašai:", relevant);
 
     if (relevant.length === 0) {
         return res.status(200).json({ answer: "Atsiprašau, neradau informacijos apie šį žodį." });
     }
 
+    // Ribojame įrašų skaičių, kad promptas nebūtų per didelis
+    const relevantLimited = relevant.slice(0, 3);
+
+    // Siunčiame tik būtinus laukus DI
+    const relevantData = relevantLimited.map(r => ({
+        senovinis: r["Senovinis žodis"],
+        dabartinis: r["Dabartinis žodis"],
+        reiksme: r["Reikšmė"],
+        pavyzdziai: r["Pavyzdiniai sakiniai"] || []
+    }));
+
     const promptToDI = `
 Vartotojas klausia: "${question}"
 
-Radau duomenų bazės įrašą: ${JSON.stringify(relevant)}
+Radau duomenų bazės įrašą: ${JSON.stringify(relevantData)}
 
 Instrukcijos DI modeliui:
 
 - Jei klausimas yra apie žodį (senovinį arba dabartinį):
-  Naudok duomenų bazės įrašą.
+  Naudok tik šiuos duomenis.
   Pateik atsakymą tarsi dėstytojas kalbėtų su studentu: pastraipomis, įtraukiamai, natūraliai.
   Paaiškink žodžio reikšmę aiškiai lietuviškai, moksliškai tiksliai, bet suprantamai šiuolaikiniam skaitytojui.
   Pateik 2–3 pavyzdinius sakinius su senoviniu žodžiu, skirtingo tono: informatyvus, vaizdingas, kad padėtų įsiminti.
@@ -50,7 +59,6 @@ Instrukcijos DI modeliui:
 - Jei klausimas neatitinka nė vienos kategorijos:
   Atsakyk neutraliu, aiškiu stiliumi.
 
-Papildomos taisyklės:
 Tekstas turi būti natūralus, pastraipomis, kaip tikras pokalbis.
 `;
 
