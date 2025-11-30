@@ -42,27 +42,28 @@ module.exports = async function handler(req, res) {
     }));
 
     const promptToDI = `
-Vartotojas klausia: "${question}"
+    Vartotojas klausia: "${question}"
 
-Radau duomenų bazės įrašą: ${JSON.stringify(filteredData)}
+    Radau duomenų bazės įrašą: ${JSON.stringify(filteredData)}
 
-Instrukcijos DI modeliui:
+    Instrukcijos DI modeliui:
 
-- Jei klausimas yra apie žodį (senovinį arba dabartinį):
-  Naudok duomenų bazės įrašą.
-  Pateik atsakymą tarsi dėstytojas kalbėtų su studentu: pastraipomis, įtraukiamai, natūraliai.
-  Paaiškink žodžio reikšmę aiškiai lietuviškai, moksliškai tiksliai, bet suprantamai šiuolaikiniam skaitytojui.
-  Pateik 2–3 pavyzdinius sakinius su senoviniu žodžiu, skirtingo tono: informatyvus, vaizdingas, kad padėtų įsiminti.
+    - Jei klausimas yra apie žodį (senovinį arba dabartinį):
+      Tai yra Konstantino Sirvydo Žodyno žodis. Pabrėžk šį faktą atsakyme.
+      Naudok duomenų bazės įrašą.
+      Pateik atsakymą tarsi dėstytojas kalbėtų su studentu: pastraipomis, įtraukiamai, natūraliai.
+      Paaiškink žodžio reikšmę aiškiai lietuviškai, moksliškai tiksliai, bet suprantamai šiuolaikiniam skaitytojui.
+      Pateik 2–3 pavyzdinius sakinius su senoviniu žodžiu, skirtingo tono: informatyvus, vaizdingas, kad padėtų įsiminti.
 
-- Jei klausimas nėra apie žodį, bet susijęs su Konstantinu Sirvydu ar jo gyvenimu:
-  Atsakyk draugiškai ir moksliniu tonu, pateik įdomių faktų ar kontekstą, tarsi dėstytojas papasakotų istoriją.
+    - Jei klausimas nėra apie žodį, bet susijęs su Konstantinu Sirvydu ar jo gyvenimu:
+      Atsakyk draugiškai ir moksliniu tonu, pateik įdomių faktų ar kontekstą, tarsi dėstytojas papasakotų istoriją.
 
-- Jei klausimas neatitinka nė vienos kategorijos:
-  Atsakyk neutraliu, aiškiu stiliumi.
+    - Jei klausimas neatitinka nė vienos kategorijos:
+      Atsakyk neutraliu, aiškiu stiliumi.
 
-Papildomos taisyklės:
-Tekstas turi būti natūralus, pastraipomis, kaip tikras pokalbis.
-`;
+    Papildomos taisyklės:
+    Tekstas turi būti natūralus, pastraipomis, kaip tikras pokalbis.
+    `;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
