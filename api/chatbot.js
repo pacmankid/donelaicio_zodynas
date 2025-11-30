@@ -38,7 +38,10 @@ module.exports = async function handler(req, res) {
     const filteredData = relevant.map(item => ({
         senas: item["Senovinis žodis"],
         dabartinis: item["Dabartinis žodis"],
-        reiksme: item["Reikšmė"]
+        reiksme: item["Reikšmė"],
+        paaiskinimasLt: item["Paaiškinimas"]
+            ? await translateToLithuanianScientific(item["Paaiškinimas"])
+            : ""
     }));
 
     const promptToDI = `
