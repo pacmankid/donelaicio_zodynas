@@ -34,14 +34,11 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ answer: "Atsiprašau, neradau informacijos apie šį žodį." });
     }
 
-    // Sukuriame tik reikalingą informaciją DI modeliui
     const filteredData = relevant.map(item => ({
         senas: item["Senovinis žodis"],
         dabartinis: item["Dabartinis žodis"],
         reiksme: item["Reikšmė"],
-        paaiskinimasLt: item["Paaiškinimas"]
-            ? await translateToLithuanianScientific(item["Paaiškinimas"])
-            : ""
+        paaiskinimas: item["Paaiškinimas"] || ""
     }));
 
     const promptToDI = `
