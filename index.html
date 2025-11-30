@@ -125,10 +125,13 @@
         chatbox.scrollTop = chatbox.scrollHeight;
 
         try {
+            // Tikriname, ar jau buvo pirmas pasisveikinimas
+            const firstMessage = !sessionStorage.getItem("sirvydasGreeted");
+
             const response = await fetch("/api/chatbot", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ apiKey, prompt: question })
+                body: JSON.stringify({ apiKey, prompt: question, firstMessage })
             });
 
             const data = await response.json();
@@ -136,6 +139,10 @@
 
             typing.remove();
             addMessage(answer, "bot");
+
+            // Pažymime, kad pasveikinta
+            if (firstMessage) sessionStorage.setItem("sirvydasGreeted", "true");
+
         } catch {
             typing.remove();
             addMessage("Įvyko klaida.", "bot");

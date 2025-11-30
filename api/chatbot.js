@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 
+// Nuskaityti žodyną iš JSON failo
 const filePath = path.join(process.cwd(), "data", "csvjson.json");
 const rawData = fs.readFileSync(filePath, "utf8");
 const zodynas = JSON.parse(rawData);
@@ -10,45 +11,40 @@ module.exports = async function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const { apiKey, prompt: question } = req.body;
+    const { apiKey, prompt: question, firstMessage } = req.body;
 
     if (!apiKey || !question) {
         return res.status(400).json({ error: "Įveskite API raktą ir klausimą" });
     }
 
-    const q = question.toLowerCase();
+    console.log("Vartotojo klausimas:", question);
 
-    // Filtruojame tik tuos įrašus, kuriuose vartotojo klausimas sutampa su senoviniu ar dabartiniu žodžiu
+    // Filtruojame tik reikiamus žodžius iš duomenų bazės
+    const q = question.toLowerCase();
     const relevant = zodynas.filter(item => {
         const senas = item["Senovinis žodis"]?.toLowerCase().trim() || "";
         const dabartinis = item["Dabartinis žodis"]?.toLowerCase().trim() || "";
         return q.includes(senas) || q.includes(dabartinis);
     });
 
+    console.log("Rasti įrašai:", relevant);
+
     if (relevant.length === 0) {
         return res.status(200).json({ answer: "Atsiprašau, neradau informacijos apie šį žodį." });
     }
 
-    // Ribojame įrašų skaičių, kad promptas nebūtų per didelis
-    const relevantLimited = relevant.slice(0, 3);
-
-    // Siunčiame tik būtinus laukus DI
-    const relevantData = relevantLimited.map(r => ({
-        senovinis: r["Senovinis žodis"],
-        dabartinis: r["Dabartinis žodis"],
-        reiksme: r["Reikšmė"],
-        pavyzdziai: r["Pavyzdiniai sakiniai"] || []
-    }));
-
+    // Formuojame promptą DI modeliui
     const promptToDI = `
+${firstMessage ? 'Sveiki! Aš Konstantinas Sirvydas. Malonu jus matyti.' : ''}
+
 Vartotojas klausia: "${question}"
 
-Radau duomenų bazės įrašą: ${JSON.stringify(relevantData)}
+${relevant.length > 0 ? `Radau duomenų bazės įrašą: ${JSON.stringify(relevant)}` : ''}
 
 Instrukcijos DI modeliui:
 
 - Jei klausimas yra apie žodį (senovinį arba dabartinį):
-  Naudok tik šiuos duomenis.
+  Naudok duomenų bazės įrašą.
   Pateik atsakymą tarsi dėstytojas kalbėtų su studentu: pastraipomis, įtraukiamai, natūraliai.
   Paaiškink žodžio reikšmę aiškiai lietuviškai, moksliškai tiksliai, bet suprantamai šiuolaikiniam skaitytojui.
   Pateik 2–3 pavyzdinius sakinius su senoviniu žodžiu, skirtingo tono: informatyvus, vaizdingas, kad padėtų įsiminti.
@@ -59,6 +55,7 @@ Instrukcijos DI modeliui:
 - Jei klausimas neatitinka nė vienos kategorijos:
   Atsakyk neutraliu, aiškiu stiliumi.
 
+Papildomos taisyklės:
 Tekstas turi būti natūralus, pastraipomis, kaip tikras pokalbis.
 `;
 
@@ -71,7 +68,8 @@ Tekstas turi būti natūralus, pastraipomis, kaip tikras pokalbis.
             },
             body: JSON.stringify({
                 model: "gpt-4o-mini",
-                messages: [{ role: "user", content: promptToDI }]
+                messages: [{ role: "user", content: promptToDI }],
+                max_tokens: 600 // sumažiname išvesties apimtį, kad nesikeltų klaidų
             })
         });
 
