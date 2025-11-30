@@ -20,11 +20,13 @@ module.exports = async function handler(req, res) {
     const relevant = zodynas.filter(item => {
         const senas = item["Senovinis žodis"]?.toLowerCase().trim() || "";
         const dabartinis = item["Dabartinis žodis"]?.toLowerCase().trim() || "";
-        return question.toLowerCase().includes(senas) || question.toLowerCase().includes(dabartinis);
+        const q = question.toLowerCase();
+        return q.includes(senas) || q.includes(dabartinis);
     });
 
-    // Pirmas pasisveikinimas tik jei pirmas klausimas
-    const firstMessage = !req.headers['x-first-message'] || req.headers['x-first-message'] === 'true';
+    // Pirmas pasisveikinimas tik jei header nenurodytas arba 'true'
+    const firstMessageHeader = req.headers['x-first-message'];
+    const firstMessage = firstMessageHeader === undefined || firstMessageHeader === 'true';
 
     const promptToDI = `
 ${firstMessage ? 'Sveiki! Aš Konstantinas Sirvydas. Malonu jus matyti.' : ''}
@@ -35,7 +37,7 @@ ${relevant.length > 0 ? `Radau duomenų bazės įrašą: ${JSON.stringify(releva
 
 Instrukcijos DI modeliui:
 
-- Jei klausimas apie žodį, naudok duomenų bazę, paaiškink kaip dėstytojas pasako studentui: natūraliai, įtraukiamai, pastraipomis, su 2-3 pavyzdiniais sakiniais, pateik senovinius žodžius ir jų reikšmes.
+- Jei klausimas apie žodį, naudok duomenų bazę, paaiškink kaip dėstytojas pasako studentui: natūraliai, įtraukiamai, pastraipomis, su 2–3 pavyzdiniais sakiniais, pateik senovinius žodžius ir jų reikšmes.
 - Jei klausimas apie Konstantiną Sirvydą, atsakyk draugiškai ir įdomiai, tarsi istoriją pasakotum.
 - Jei klausimas neatitinka nė vienos kategorijos, atsakyk neutraliu stiliumi.
 
