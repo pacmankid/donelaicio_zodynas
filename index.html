@@ -1,135 +1,173 @@
-<body class="text-gray-900 dark:text-gray-100 transition-colors duration-300">
+<!DOCTYPE html>
+<html lang="lt" class="dark">
+<head>
+    <meta charset="UTF-8" />
+    <title>Sirvydo žodynas • Chatbot</title>
 
-    <!-- FONO SLUOKSNIS -->
-    <div class="fixed inset-0 z-0">
-        <img src="data/fonas.png" class="w-full h-full object-cover">
-        <div class="absolute inset-0 bg-bgLight dark:bg-bgDark opacity-70 transition-colors duration-300"></div>
-    </div>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- PAGRINDINIS TURINYS -->
-    <div class="relative z-10 max-w-3xl mx-auto h-screen flex flex-col p-4">
-
-        <!-- HEADER -->
-        <div class="flex items-center justify-between mb-4">
-            <h1 class="text-2xl font-bold">Sirvydo žodynas • Chatbot</h1>
-            <button id="toggleTheme"
-                class="px-3 py-1 rounded-lg bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                🌙 / ☀️
-            </button>
-        </div>
-
-        <!-- API INPUT (forma dėl Chrome autofill) -->
-        <form id="apiForm" class="mb-2">
-            <label class="text-sm">Įveskite savo DI API raktą:</label>
-            <input type="password" id="apiKey" name="apikey" autocomplete="current-password"
-                class="w-full p-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800"
-                placeholder="API raktas">
-            <button type="submit" class="hidden"></button>
-        </form>
-
-        <!-- CHATBOX -->
-        <div id="chatbox"
-            class="flex-1 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl p-4 shadow-inner flex flex-col gap-4">
-        </div>
-
-        <!-- INPUT BAR -->
-        <div class="flex mt-3 gap-2">
-            <input type="text" id="userQuestion"
-                class="flex-1 p-3 rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-900"
-                placeholder="Įveskite klausimą...">
-            <button id="sendBtn"
-                class="px-5 py-3 bg-primary text-white rounded-xl hover:bg-blue-600 transition">
-                Siųsti
-            </button>
-        </div>
-
-    </div>
-
-    <!-- JAVASCRIPT liko tas pats -->
     <script>
-        const chatbox = document.getElementById('chatbox');
-        const userInput = document.getElementById('userQuestion');
-        const sendBtn = document.getElementById('sendBtn');
-        const toggleTheme = document.getElementById('toggleTheme');
-        const apiForm = document.getElementById("apiForm");
-        const apiInput = document.getElementById("apiKey");
-
-        /* DARK MODE */
-        toggleTheme.addEventListener('click', () =>
-            document.documentElement.classList.toggle('dark')
-        );
-
-        /* ===== 1. Užkrauname API raktą iš localStorage ===== */
-        const savedKey = localStorage.getItem("sirvydasApiKey");
-        if (savedKey) {
-            apiInput.value = savedKey;
-        }
-
-        /* Užblokuojame tikrą formos submit */
-        apiForm.addEventListener("submit", (e) => e.preventDefault());
-
-        /* ADD MESSAGE */
-        function addMessage(text, sender = "bot") {
-            const wrap = document.createElement("div");
-            wrap.className = `flex items-start gap-3 max-w-[85%] ${sender === "user" ? "ml-auto flex-row-reverse" : ""}`;
-            const avatar = document.createElement("div");
-            avatar.className = "w-10 h-10 rounded-full flex-shrink-0 overflow-hidden";
-            if (sender === "user") {
-                avatar.innerHTML = `<div class='w-full h-full bg-gray-500 text-white flex items-center justify-center font-bold'>👤</div>`;
-            } else {
-                avatar.innerHTML = `<img src="data/ks.png" class="w-full h-full object-cover">`;
-            }
-            const bubble = document.createElement("div");
-            bubble.className = `
-                p-3 rounded-xl text-sm leading-relaxed shadow
-                ${sender === "user" ? "bg-primary text-white" : "bg-gray-200 dark:bg-msgBot"}
-            `;
-            const paragraphs = text.split(/\n+/).filter(line => line.trim() !== "");
-            bubble.innerHTML = paragraphs.map(p => `<p class="mb-2">${p}</p>`).join("");
-            wrap.appendChild(avatar);
-            wrap.appendChild(bubble);
-            chatbox.appendChild(wrap);
-            chatbox.scrollTop = chatbox.scrollHeight;
-        }
-
-        /* SEND MESSAGE */
-        async function sendMessage() {
-            const apiKey = apiInput.value.trim();
-            const question = userInput.value.trim();
-            if (!apiKey || !question) {
-                alert("Įveskite API raktą ir klausimą");
-                return;
-            }
-            localStorage.setItem("sirvydasApiKey", apiKey);
-            addMessage(question, "user");
-            userInput.value = "";
-            const typing = document.createElement("div");
-            typing.id = "typing";
-            typing.className = "text-gray-500 dark:text-gray-400 text-sm italic";
-            typing.textContent = "Sirvydas mąsto...";
-            chatbox.appendChild(typing);
-            chatbox.scrollTop = chatbox.scrollHeight;
-            try {
-                const firstMessage = !sessionStorage.getItem("sirvydasGreeted");
-                const response = await fetch("/api/chatbot", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ apiKey, prompt: question, firstMessage })
-                });
-                const data = await response.json();
-                const answer = data.answer || "Įvyko klaida.";
-                typing.remove();
-                addMessage(answer, "bot");
-                if (firstMessage) sessionStorage.setItem("sirvydasGreeted", "true");
-            } catch {
-                typing.remove();
-                addMessage("Įvyko klaida.", "bot");
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#0079ff",
+                        bgLight: "#f5f7fa",
+                        bgDark: "#1e1f24",
+                        msgBot: "#32343a"
+                    }
+                }
             }
         }
-
-        sendBtn.addEventListener("click", sendMessage);
-        userInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") sendMessage();
-        });
     </script>
+</head>
+
+<body class="bg-bgLight dark:bg-bgDark text-gray-900 dark:text-gray-100 transition-colors duration-300">
+
+<div class="max-w-3xl mx-auto h-screen flex flex-col p-4">
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-bold">Sirvydo žodynas • Chatbot</h1>
+        <button id="toggleTheme"
+            class="px-3 py-1 rounded-lg bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+            🌙 / ☀️
+        </button>
+    </div>
+
+    <!-- API INPUT (forma dėl Chrome autofill) -->
+    <form id="apiForm" class="mb-2">
+        <label class="text-sm">Įveskite savo DI API raktą:</label>
+        <input type="password" id="apiKey" name="apikey" autocomplete="current-password"
+            class="w-full p-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800"
+            placeholder="API raktas">
+        <button type="submit" class="hidden"></button>
+    </form>
+
+    <!-- CHATBOX -->
+    <div id="chatbox"
+        class="flex-1 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl p-4 shadow-inner flex flex-col gap-4">
+    </div>
+
+    <!-- INPUT BAR -->
+    <div class="flex mt-3 gap-2">
+        <input type="text" id="userQuestion"
+            class="flex-1 p-3 rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-900"
+            placeholder="Įveskite klausimą...">
+        <button id="sendBtn"
+            class="px-5 py-3 bg-primary text-white rounded-xl hover:bg-blue-600 transition">
+            Siųsti
+        </button>
+    </div>
+
+</div>
+
+<script>
+    const chatbox = document.getElementById('chatbox');
+    const userInput = document.getElementById('userQuestion');
+    const sendBtn = document.getElementById('sendBtn');
+    const toggleTheme = document.getElementById('toggleTheme');
+    const apiForm = document.getElementById("apiForm");
+    const apiInput = document.getElementById("apiKey");
+
+    /* DARK MODE */
+    toggleTheme.addEventListener('click', () =>
+        document.documentElement.classList.toggle('dark')
+    );
+
+    /* ===== 1. Užkrauname API raktą iš localStorage ===== */
+    const savedKey = localStorage.getItem("sirvydasApiKey");
+    if (savedKey) {
+        apiInput.value = savedKey;
+    }
+
+    /* Užblokuojame tikrą formos submit, Chrome vis tiek pasiūlys išsaugoti */
+    apiForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+    });
+
+    /* ADD MESSAGE */
+    function addMessage(text, sender = "bot") {
+        const wrap = document.createElement("div");
+        wrap.className = `flex items-start gap-3 max-w-[85%] ${sender === "user" ? "ml-auto flex-row-reverse" : ""}`;
+
+        const avatar = document.createElement("div");
+        avatar.className = "w-10 h-10 rounded-full flex-shrink-0 overflow-hidden";
+
+        if (sender === "user") {
+            avatar.innerHTML = `<div class='w-full h-full bg-gray-500 text-white flex items-center justify-center font-bold'>👤</div>`;
+        } else {
+            avatar.innerHTML = `<img src="data/ks.png" class="w-full h-full object-cover">`;
+        }
+
+        const bubble = document.createElement("div");
+        bubble.className = `
+            p-3 rounded-xl text-sm leading-relaxed shadow
+            ${sender === "user" ? "bg-primary text-white" : "bg-gray-200 dark:bg-msgBot"}
+        `;
+
+        const paragraphs = text.split(/\n+/).filter(line => line.trim() !== "");
+        bubble.innerHTML = paragraphs.map(p => `<p class="mb-2">${p}</p>`).join("");
+
+        wrap.appendChild(avatar);
+        wrap.appendChild(bubble);
+        chatbox.appendChild(wrap);
+        chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    /* SEND MESSAGE */
+    async function sendMessage() {
+        const apiKey = apiInput.value.trim();
+        const question = userInput.value.trim();
+
+        if (!apiKey || !question) {
+            alert("Įveskite API raktą ir klausimą");
+            return;
+        }
+
+        /* ===== 2. Išsaugome API raktą į localStorage ===== */
+        localStorage.setItem("sirvydasApiKey", apiKey);
+
+        addMessage(question, "user");
+        userInput.value = "";
+
+        const typing = document.createElement("div");
+        typing.id = "typing";
+        typing.className = "text-gray-500 dark:text-gray-400 text-sm italic";
+        typing.textContent = "Sirvydas mąsto...";
+        chatbox.appendChild(typing);
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+        try {
+            const firstMessage = !sessionStorage.getItem("sirvydasGreeted");
+
+            const response = await fetch("/api/chatbot", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ apiKey, prompt: question, firstMessage })
+            });
+
+            const data = await response.json();
+            const answer = data.answer || "Įvyko klaida.";
+
+            typing.remove();
+            addMessage(answer, "bot");
+
+            if (firstMessage) sessionStorage.setItem("sirvydasGreeted", "true");
+
+        } catch {
+            typing.remove();
+            addMessage("Įvyko klaida.", "bot");
+        }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    userInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+</script>
+
 </body>
+</html>
