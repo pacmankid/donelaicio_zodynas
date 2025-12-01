@@ -37,11 +37,16 @@
         </button>
     </div>
 
-    <!-- API INPUT -->
-    <label class="text-sm">Įveskite savo DI API raktą:</label>
-    <input type="text" id="apiKey"
-        class="w-full p-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800 mb-2"
-        placeholder="API raktas">
+    <!-- API INPUT (FORMA dėl Chrome autofill) -->
+    <form id="apiForm" class="mb-2">
+        <label class="text-sm">Įveskite savo DI API raktą:</label>
+
+        <input type="password" id="apiKey" name="apikey" autocomplete="current-password"
+            class="w-full p-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800"
+            placeholder="API raktas">
+
+        <button type="submit" class="hidden"></button>
+    </form>
 
     <!-- CHATBOX -->
     <div id="chatbox"
@@ -67,11 +72,17 @@
     const userInput = document.getElementById('userQuestion');
     const sendBtn = document.getElementById('sendBtn');
     const toggleTheme = document.getElementById('toggleTheme');
+    const apiForm = document.getElementById("apiForm");
 
     /* DARK MODE */
     toggleTheme.addEventListener('click', () =>
         document.documentElement.classList.toggle('dark')
     );
+
+    /* Chrome slaptažodžių sistema — užblokuojame tikrą submit */
+    apiForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+    });
 
     /* ADD MESSAGE */
     function addMessage(text, sender = "bot") {
@@ -93,7 +104,6 @@
             ${sender === "user" ? "bg-primary text-white" : "bg-gray-200 dark:bg-msgBot"}
         `;
 
-        // Padalinti atsakymą į pastraipas
         const paragraphs = text.split(/\n+/).filter(line => line.trim() !== "");
         bubble.innerHTML = paragraphs.map(p => `<p class="mb-2">${p}</p>`).join("");
 
@@ -113,6 +123,9 @@
             alert("Įveskite API raktą ir klausimą");
             return;
         }
+
+        /* Chrome password save request trigger */
+        apiForm.submit();
 
         addMessage(question, "user");
         userInput.value = "";
