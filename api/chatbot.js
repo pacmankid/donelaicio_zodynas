@@ -75,7 +75,7 @@ module.exports = async function handler(req, res) {
             body: JSON.stringify({
                 model: "gpt-5.1",   // ← ČIA PAKEISTA
                 messages: [{ role: "user", content: promptToDI }],
-                max_tokens: 500
+                max_completion_tokens: 300
             })
         });
 
