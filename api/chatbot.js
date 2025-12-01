@@ -18,58 +18,52 @@ module.exports = async function handler(req, res) {
 
     console.log("Vartotojo klausimas:", question);
 
+    const q = question.toLowerCase().trim();
+
+    // **1. Tikslus žodžio filtravimas**
     let relevant = zodynas.filter(item => {
         const senas = item["Senovinis žodis"]?.toLowerCase().trim() || "";
         const dabartinis = item["Dabartinis žodis"]?.toLowerCase().trim() || "";
-        const q = question.toLowerCase();
-        return q.includes(senas) || q.includes(dabartinis);
+        return q === senas || q === dabartinis;
     });
 
-    relevant = relevant.slice(0, 5);
+    let filteredText = "";
 
-    if (relevant.length === 0) {
-        return res.status(200).json({ answer: "Atsiprašau, neradau informacijos apie šį žodį." });
+    // **2. Jei žodis rastas – formuojame tekstą**
+    if (relevant.length > 0) {
+        relevant = relevant.slice(0, 5);
+        filteredText = relevant.map(item => {
+            return `Senovinis žodis: „${item["Senovinis žodis"]}“\n` +
+                   `Dabartinis žodis / Sinonimai: „${item["Dabartinis žodis"]}“\n` +
+                   `Paaiškinimas: ${item["Paaiškinimas"] || item["Reikšmė"]}\n` +
+                   `Kontekstas / pavyzdžiai: ${item["Paaiškinimas"] || ""}\n`;
+        }).join("\n");
     }
 
-    // Transformuojame į tvarkingą tekstą pastraipomis
-    const filteredText = relevant.map(item => {
-        return `Senovinis žodis: „${item["Senovinis žodis"]}“\n` +
-               `Dabartinis žodis / Sinonimai: „${item["Dabartinis žodis"]}“\n` +
-               `Paaiškinimas: ${item["Paaiškinimas"] || item["Reikšmė"]}\n` +
-               `Kontekstas / pavyzdžiai: ${item["Paaiškinimas"] || ""}\n`;
-    }).join("\n");
-
+    // **3. Visada siunčiame pilną promptą DI – net jei nerasta žodžio**
     const promptToDI = `
-    Vartotojas klausia: „${question || ""}“
+Vartotojas klausia: „${question}“
 
-    ${filteredText ? `Radau duomenų bazės įrašą:\n${filteredText}` : ""}
+${filteredText ? `Radau duomenų bazės įrašą:\n${filteredText}` : ""}
 
-    Instrukcijos:
-    1. Bendras stilius:
-        • Tu esi Konstantinas Sirvydas ir kalbi draugiškai, tarsi pats paaiškintum vartotojui.
-        • Atsakymai turi būti natūralūs, sklandūs, pastraipomis, 2–3 sakiniai vienoje pastraipoje.
-        • Naudok lietuviškas kabutes („…“) jei reikia.
-        • Gali naudoti emoji, bet saikingai.
-        • Atsakymai turi būti pateikti taip, kad skaitytojas jaustųsi lyg gautų pokalbį, o ne sausą sąrašą.
+Instrukcijos:
+1. Bendras stilius:
+    • Tu esi Konstantinas Sirvydas ir kalbi draugiškai.
+    • Rašyk aiškiai, natūraliai, pastraipomis.
+    • 1–2 sakiniai pastraipoje, 2–3 pastraipos.
+    • Gali naudoti emoji, bet saikingai.
 
-    2. Jei klausimas apie žodį:
-        • Pabrėžk, kad tai Konstantino Sirvydo žodyno žodis.
-        • Įtraukiame pagrindinę reikšmę, sinonimus, lotyniškus ar lenkiškus atitikmenis, kontekstą.
-        • Informaciją sujunk į 1–2 pastraipas, papildomai pateik 1–2 pavyzdinius sakinius su žodžiu.
-        • Išvengi sausų stulpelių, naudok natūralų pastraipų srautą, lyg pasakoji istoriją.
+2. Jei klausimas apie žodį:
+    • Pateik reikšmę, kontekstą, sinonimus, lotyniškus/lenkiškus atitikmenis.
+    • Aprašyk šiltai, kaip žmogui, ne kaip sąrašą.
+    • Pateik 1–2 pavyzdinius sakinius su žodžiu.
 
-    3. Jei klausimas apie Konstantiną Sirvydą ar jo gyvenimą:
-        • Atsakyk draugiškai, moksliniu tonu, kaip pasakotum istoriją.
-        • Pastraipos: 1–2, 2–3 sakiniai kiekvienoje.
+3. Jei klausimas nėra žodis:
+    • Sveikinkis ir bendrauk natūraliai.
+    • Paaiškink, kad gali kalbėti apie Sirvydą arba jo žodyno žodžius.
 
-    4. Jei klausimas neatitinka nei žodžių, nei asmens temos:
-        • Atsak neutraliu, aiškiu stiliumi, trumpai.
-        • Paaiškink, kad esi skirtas tik sužinoti apie Konstantiną Sirvydą ir jo žodyną.
-
-    5. Papildomos taisyklės:
-        • Visada pastraipos turi būti natūralios, sujungiant informaciją į sklandų tekstą.
-        • Pasiteirauk vartotojo, ar gali dar kuo padėti.
-    `;
+4. Visada gale pasiteirauk, ar galiu dar kuo padėti.
+`;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
