@@ -62,8 +62,9 @@ module.exports = async function handler(req, res) {
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "gpt-4o-mini",
+                model: "gpt-5.1",
                 messages: [{ role: "user", content: promptToDI }]
+                max_completion_tokens: 300
             })
         });
 
