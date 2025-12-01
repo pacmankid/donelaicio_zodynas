@@ -41,7 +41,7 @@ module.exports = async function handler(req, res) {
     const promptToDI = `
     Vartotojas klausia: „${question || ""}“
 
-    `${filteredData.length > 0 ? `Radau duomenų bazės įrašą: ${JSON.stringify(filteredData)}` : ""}`
+    ${filteredData.length > 0 ? `Radau duomenų bazės įrašą: ${JSON.stringify(filteredData)}` : ""}
 
     Instrukcijos:
     1. Bendras stilius:
@@ -73,7 +73,7 @@ module.exports = async function handler(req, res) {
     5. Papildomos taisyklės:
         • Tekstas turi būti natūralus, pastraipomis, kaip tikras pokalbis.
         • Visada pasiteirauk, ar gali dar kuo padėti.
-        `;
+    `;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
