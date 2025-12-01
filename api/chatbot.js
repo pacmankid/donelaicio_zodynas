@@ -83,7 +83,7 @@ module.exports = async function handler(req, res) {
                 "Authorization": Bearer ${apiKey}
             },
             body: JSON.stringify({
-                model: "gpt-4.1",   // ← ČIA PAKEISTA
+                model: "gpt-5.1",   // ← ČIA PAKEISTA
                 messages: [{ role: "user", content: promptToDI }],
                 max_completion_tokens: 300
             })
