@@ -37,14 +37,12 @@
         </button>
     </div>
 
-    <!-- API INPUT (FORMA dėl Chrome autofill) -->
+    <!-- API INPUT (forma dėl Chrome autofill) -->
     <form id="apiForm" class="mb-2">
         <label class="text-sm">Įveskite savo DI API raktą:</label>
-
         <input type="password" id="apiKey" name="apikey" autocomplete="current-password"
             class="w-full p-2 rounded-lg border dark:border-gray-700 bg-white dark:bg-gray-800"
             placeholder="API raktas">
-
         <button type="submit" class="hidden"></button>
     </form>
 
@@ -58,7 +56,6 @@
         <input type="text" id="userQuestion"
             class="flex-1 p-3 rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-900"
             placeholder="Įveskite klausimą...">
-
         <button id="sendBtn"
             class="px-5 py-3 bg-primary text-white rounded-xl hover:bg-blue-600 transition">
             Siųsti
@@ -80,13 +77,13 @@
         document.documentElement.classList.toggle('dark')
     );
 
-    /* ===== 1. UŽKRAUNAME API RAKTĄ IŠ LOCALSTORAGE ===== */
+    /* ===== 1. Užkrauname API raktą iš localStorage ===== */
     const savedKey = localStorage.getItem("sirvydasApiKey");
     if (savedKey) {
         apiInput.value = savedKey;
     }
 
-    /* Chrome slaptažodžių sistema — užblokuojame tikrą submit */
+    /* Užblokuojame tikrą formos submit, Chrome vis tiek pasiūlys išsaugoti */
     apiForm.addEventListener("submit", (e) => {
         e.preventDefault();
     });
@@ -117,7 +114,6 @@
         wrap.appendChild(avatar);
         wrap.appendChild(bubble);
         chatbox.appendChild(wrap);
-
         chatbox.scrollTop = chatbox.scrollHeight;
     }
 
@@ -131,11 +127,8 @@
             return;
         }
 
-        /* ===== 2. IŠSAUGOME API RAKTĄ Į LOCALSTORAGE ===== */
+        /* ===== 2. Išsaugome API raktą į localStorage ===== */
         localStorage.setItem("sirvydasApiKey", apiKey);
-
-        /* Chrome password save request trigger */
-        apiForm.submit();
 
         addMessage(question, "user");
         userInput.value = "";
