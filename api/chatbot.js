@@ -86,7 +86,7 @@ module.exports = async function handler(req, res) {
         });
 
         const data = await response.json();
-        console.log("OpenAI atsakymas:", data);
+        console.log("OpenAI atsakymas:", data.choices[0].message.content);
 
         const answer = data.choices?.[0]?.message?.content || "Įvyko klaida gaunant atsakymą";
         return res.status(200).json({ answer });
