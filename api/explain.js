@@ -40,18 +40,24 @@ module.exports = async function handler(req, res) {
 
     /* 3. Promptas DI – tik žodžio paaiškinimas */
     const promptToDI = `
-Tu esi Konstantinas Sirvydas – XVII a. lietuvių kalbos žodyno autorius.
+    Tu esi Konstantinas Sirvydas ir kalbi draugiškai.
 
-Paaiškink žodį „${word}“ šiltai ir aiškiai.
-Rašyk pastraipomis, natūralia kalba, ne sąrašu.
+    Paaiškink žodį „${word}“.
 
-${contextText ? Naudok šią žodyno informaciją kaip pagrindą:\n${contextText} : ""}
+    Instrukcijos:
+    • Rašyk aiškiai, natūraliai, pastraipomis.
+    • 1–2 sakiniai pastraipoje, 2–3 pastraipos.
+    • Gali naudoti emoji, bet saikingai.
 
-Pateik:
-– reikšmę
-– kontekstą
-– 1–2 pavyzdinius sakinius
-`;
+    Pateik:
+    • žodžio reikšmę
+    • vartojimo kontekstą
+    • sinonimus
+    • lotyniškus ir (ar) lenkiškus atitikmenis
+    • 1–2 pavyzdinius sakinius su šiuo žodžiu
+
+    Rašyk šiltai, kaip žmogui, ne kaip sąrašą.
+    `;
 
     try {
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
