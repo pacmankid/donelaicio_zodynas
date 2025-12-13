@@ -9,23 +9,20 @@ module.exports = function handler(req, res) {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const letter = (req.query.letter || "").toLowerCase().trim();
+    let letter = (req.query.letter || "").trim().toUpperCase();
 
     if (!letter) {
         return res.json([]);
     }
 
+    // Filtruojame tik pagal Senovinį žodį
     const words = zodynas
         .map(row => row["Senovinis žodis"])
-        .filter(word =>
-            typeof word === "string" &&
-            word.toLowerCase().startsWith(letter)
-        )
-        .map(word => word.trim())
-        .sort((a, b) => a.localeCompare(b, "lt"));
+        .filter(word => typeof word === "string" && word.trim().toUpperCase().startsWith(letter))
+        .map(word => word.trim());
 
-    // pašaliname dublikatus
-    const uniqueWords = [...new Set(words)];
+    // Pašaliname dublikatus ir surikiuojame pagal lietuvių abėcėlę
+    const uniqueWords = [...new Set(words)].sort((a, b) => a.localeCompare(b, "lt"));
 
     return res.status(200).json(uniqueWords);
 };
