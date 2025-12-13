@@ -1,68 +1,56 @@
-const path = require('path');
-const fs = require('fs');
+const path = require("path");
+const fs = require("fs");
 
 const filePath = path.join(process.cwd(), "data", "csvjson.json");
-const rawData = fs.readFileSync(filePath, "utf8");
-const zodynas = JSON.parse(rawData);
+const zodynas = JSON.parse(fs.readFileSync(filePath, "utf8"));
 
 module.exports = async function handler(req, res) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
     }
 
-    const { apiKey, prompt: question } = req.body;
+    const { apiKey, word } = req.body;
 
-    if (!apiKey || !question) {
-        return res.status(400).json({ error: "Įveskite API raktą ir klausimą" });
+    if (!apiKey || !word) {
+        return res.status(400).json({ error: "Trūksta API rakto arba žodžio" });
     }
 
-    console.log("Vartotojo klausimas:", question);
+    const q = word.toLowerCase().trim();
+    console.log("Paaiškinamas žodis:", q);
 
-    const q = question.toLowerCase().trim();
-
-    // **1. Tikslus žodžio filtravimas**
-    let relevant = zodynas.filter(item => {
+    /* 1. Ieškome žodžio JSON duomenų bazėje */
+    const matches = zodynas.filter(item => {
         const senas = item["Senovinis žodis"]?.toLowerCase().trim() || "";
         const dabartinis = item["Dabartinis žodis"]?.toLowerCase().trim() || "";
         return q === senas || q === dabartinis;
-    });
+    }).slice(0, 3);
 
-    let filteredText = "";
+    /* 2. Paruošiame kontekstą DI (jei radome JSON įrašą) */
+    let contextText = "";
 
-    // **2. Jei žodis rastas – formuojame tekstą**
-    if (relevant.length > 0) {
-        relevant = relevant.slice(0, 5);
-        filteredText = relevant.map(item => {
-            return `Senovinis žodis: „${item["Senovinis žodis"]}“\n` +
-                   `Dabartinis žodis / Sinonimai: „${item["Dabartinis žodis"]}“\n` +
-                   `Paaiškinimas: ${item["Paaiškinimas"] || item["Reikšmė"]}\n` +
-                   `Kontekstas / pavyzdžiai: ${item["Paaiškinimas"] || ""}\n`;
+    if (matches.length) {
+        contextText = matches.map(item => {
+            return (
+                `Senovinis žodis: „${item["Senovinis žodis"]}“\n` +
+                `Dabartinis žodis / sinonimai: „${item["Dabartinis žodis"]}“\n` +
+                `Paaiškinimas: ${item["Paaiškinimas"] || item["Reikšmė"] || ""}\n`
+            );
         }).join("\n");
     }
 
-    // **3. Visada siunčiame pilną promptą DI – net jei nerasta žodžio**
+    /* 3. Promptas DI – tik žodžio paaiškinimas */
     const promptToDI = `
-Vartotojas klausia: „${question}“
+Tu esi Konstantinas Sirvydas – XVII a. lietuvių kalbos žodyno autorius.
 
-${filteredText ? `Radau duomenų bazės įrašą:\n${filteredText}` : ""}
+Paaiškink žodį „${word}“ šiltai ir aiškiai.
+Rašyk pastraipomis, natūralia kalba, ne sąrašu.
 
-Instrukcijos:
-1. Bendras stilius:
-    • Tu esi Konstantinas Sirvydas ir kalbi draugiškai.
-    • Rašyk aiškiai, natūraliai, pastraipomis.
-    • 1–2 sakiniai pastraipoje, 2–3 pastraipos.
-    • Gali naudoti emoji, bet saikingai.
+${contextText ? `Naudok šią žodyno informaciją kaip pagrindą:\n${contextText}` : ""}
 
-2. Jei klausimas apie žodį:
-    • Pateik reikšmę, kontekstą, sinonimus, lotyniškus/lenkiškus atitikmenis.
-    • Aprašyk šiltai, kaip žmogui, ne kaip sąrašą.
-    • Pateik 1–2 pavyzdinius sakinius su žodžiu.
-
-3. Jei klausimas nėra žodis:
-    • Sveikinkis ir bendrauk natūraliai.
-    • Paaiškink, kad gali kalbėti apie Sirvydą arba jo žodyno žodžius.
-
-4. Visada gale pasiteirauk, ar galiu dar kuo padėti.
+Pateik:
+– reikšmę
+– kontekstą
+– 1–2 pavyzdinius sakinius
 `;
 
     try {
@@ -75,18 +63,23 @@ Instrukcijos:
             body: JSON.stringify({
                 model: "gpt-5.1",
                 messages: [{ role: "user", content: promptToDI }],
-                max_completion_tokens: 500
+                max_completion_tokens: 400
             })
         });
 
         const data = await response.json();
-        console.log("OpenAI atsakymas:", data.choices[0].message.content);
 
-        const answer = data.choices?.[0]?.message?.content || "Įvyko klaida gaunant atsakymą";
+        const answer =
+            data.choices?.[0]?.message?.content ||
+            "Nepavyko gauti paaiškinimo.";
+
         return res.status(200).json({ answer });
 
     } catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Server error", details: err.toString() });
+        console.error("DI klaida:", err);
+        return res.status(500).json({
+            error: "Server error",
+            details: err.toString()
+        });
     }
 };
