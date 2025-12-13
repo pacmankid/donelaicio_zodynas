@@ -6,15 +6,13 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
+        tailwind.config = { darkMode: 'class' }
     </script>
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
 
-<div class="max-w-5xl mx-auto p-4">
+<div class="max-w-7xl mx-auto p-4">
 
     <!-- HEADER -->
     <div class="flex justify-between items-center mb-4">
@@ -25,23 +23,31 @@
         </button>
     </div>
 
-    <!-- API KEY (reikalingas tik žodžio paaiškinimui) -->
+    <!-- API KEY -->
     <input id="apiKey"
         placeholder="Įveskite DI API raktą (tik paaiškinimams)"
         class="w-full mb-4 p-2 rounded bg-white dark:bg-gray-800 border dark:border-gray-700"/>
 
-    <!-- ABĖCĖLĖ -->
-    <div id="alphabet" class="flex flex-wrap gap-2 mb-6"></div>
+    <!-- TURINYS -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-    <!-- ŽODŽIAI -->
-    <div id="words"
-         class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-6"></div>
+        <!-- KAIRĖ: ABĖCĖLĖ + ŽODŽIAI -->
+        <div>
+            <div id="alphabet" class="flex flex-wrap gap-2 mb-4"></div>
+            <div id="words"
+                class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+            </div>
+        </div>
 
-    <!-- PAAIŠKINIMAS -->
-    <div id="explanation"
-        class="hidden bg-white dark:bg-gray-800 p-4 rounded shadow text-sm leading-relaxed">
+        <!-- DEŠINĖ: DI PAAIŠKINIMAS -->
+        <div id="explanation"
+            class="hidden bg-white dark:bg-gray-800 p-5 rounded shadow text-sm leading-relaxed">
+            <div class="italic opacity-70">
+                Pasirinkite žodį, kad matytumėte paaiškinimą.
+            </div>
+        </div>
+
     </div>
-
 </div>
 
 <script>
@@ -51,38 +57,29 @@ const explanationDiv = document.getElementById("explanation");
 const apiKeyInput = document.getElementById("apiKey");
 
 /* DARK MODE */
-document.getElementById("toggleTheme").addEventListener("click", () => {
+document.getElementById("toggleTheme").onclick = () =>
     document.documentElement.classList.toggle("dark");
-});
 
 /* ABĖCĖLĖ */
 const letters = "AĄBCČDEĘĖFGHIĮYJKLMNOPRSŠTUŲŪVZŽ".split("");
-let activeLetterBtn = null;
+let activeBtn = null;
 
 letters.forEach(letter => {
     const btn = document.createElement("button");
     btn.textContent = letter;
-    btn.className = `
-        px-2 py-1 rounded
-        bg-gray-200 dark:bg-gray-700
-        hover:bg-blue-500 hover:text-white
-        transition
-    `;
+    btn.className = "px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-blue-500 hover:text-white";
 
     btn.onclick = () => {
-        if (activeLetterBtn) {
-            activeLetterBtn.classList.remove("bg-blue-500", "text-white");
-        }
+        activeBtn?.classList.remove("bg-blue-500", "text-white");
         btn.classList.add("bg-blue-500", "text-white");
-        activeLetterBtn = btn;
-
+        activeBtn = btn;
         loadWords(letter);
     };
 
     alphabetDiv.appendChild(btn);
 });
 
-/* ŽODŽIAI PAGAL RAIDĘ – TIK JSON, JOKIO DI */
+/* ŽODŽIAI – TIK IŠ „Senovinis žodis“ */
 async function loadWords(letter) {
     wordsDiv.innerHTML = "";
     explanationDiv.classList.add("hidden");
@@ -91,26 +88,20 @@ async function loadWords(letter) {
     const words = await res.json();
 
     if (!words.length) {
-        wordsDiv.innerHTML =
-            "<div class='italic opacity-70'>Žodžių nėra</div>";
+        wordsDiv.innerHTML = "<div class='italic opacity-60'>Žodžių nėra</div>";
         return;
     }
 
     words.forEach(word => {
         const btn = document.createElement("button");
         btn.textContent = word;
-        btn.className = `
-            text-left p-2 rounded
-            bg-white dark:bg-gray-800
-            hover:bg-blue-100 dark:hover:bg-gray-700
-            transition
-        `;
+        btn.className = "p-2 text-left rounded bg-white dark:bg-gray-800 hover:bg-blue-100 dark:hover:bg-gray-700";
         btn.onclick = () => explainWord(word);
         wordsDiv.appendChild(btn);
     });
 }
 
-/* PAAIŠKINIMAS – DI NAUDOJAMAS TIK ČIA */
+/* DI – TIK PASIRINKTAM ŽODŽIUI */
 async function explainWord(word) {
     const apiKey = apiKeyInput.value.trim();
     if (!apiKey) {
@@ -119,7 +110,7 @@ async function explainWord(word) {
     }
 
     explanationDiv.classList.remove("hidden");
-    explanationDiv.innerHTML = "<span class='italic'>Sirvydas mąsto…</span>";
+    explanationDiv.innerHTML = `<div class="italic">Sirvydas mąsto apie „${word}“…</div>`;
 
     const res = await fetch("/api/explain", {
         method: "POST",
