@@ -19,25 +19,28 @@
     <!-- HEADER -->
     <div class="flex justify-between items-center mb-4">
         <h1 class="text-2xl font-bold">Sirvydo žodynas</h1>
-        <button id="toggleTheme" class="px-3 py-1 bg-gray-300 dark:bg-gray-700 rounded">
+        <button id="toggleTheme"
+            class="px-3 py-1 bg-gray-300 dark:bg-gray-700 rounded">
             🌙 / ☀️
         </button>
     </div>
 
-    <!-- API KEY -->
+    <!-- API KEY (reikalingas tik žodžio paaiškinimui) -->
     <input id="apiKey"
-           placeholder="Įveskite DI API raktą"
-           class="w-full mb-4 p-2 rounded bg-white dark:bg-gray-800 border dark:border-gray-700"/>
+        placeholder="Įveskite DI API raktą (tik paaiškinimams)"
+        class="w-full mb-4 p-2 rounded bg-white dark:bg-gray-800 border dark:border-gray-700"/>
 
     <!-- ABĖCĖLĖ -->
     <div id="alphabet" class="flex flex-wrap gap-2 mb-6"></div>
 
     <!-- ŽODŽIAI -->
-    <div id="words" class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-6"></div>
+    <div id="words"
+         class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-6"></div>
 
     <!-- PAAIŠKINIMAS -->
     <div id="explanation"
-         class="hidden bg-white dark:bg-gray-800 p-4 rounded shadow text-sm leading-relaxed"></div>
+        class="hidden bg-white dark:bg-gray-800 p-4 rounded shadow text-sm leading-relaxed">
+    </div>
 
 </div>
 
@@ -48,55 +51,79 @@ const explanationDiv = document.getElementById("explanation");
 const apiKeyInput = document.getElementById("apiKey");
 
 /* DARK MODE */
-document.getElementById("toggleTheme")
-    .addEventListener("click", () =>
-        document.documentElement.classList.toggle("dark")
-    );
+document.getElementById("toggleTheme").addEventListener("click", () => {
+    document.documentElement.classList.toggle("dark");
+});
 
 /* ABĖCĖLĖ */
 const letters = "AĄBCČDEĘĖFGHIĮYJKLMNOPRSŠTUŲŪVZŽ".split("");
+let activeLetterBtn = null;
 
 letters.forEach(letter => {
     const btn = document.createElement("button");
     btn.textContent = letter;
-    btn.className = "px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 hover:bg-blue-500 hover:text-white";
-    btn.onclick = () => loadWords(letter);
+    btn.className = `
+        px-2 py-1 rounded
+        bg-gray-200 dark:bg-gray-700
+        hover:bg-blue-500 hover:text-white
+        transition
+    `;
+
+    btn.onclick = () => {
+        if (activeLetterBtn) {
+            activeLetterBtn.classList.remove("bg-blue-500", "text-white");
+        }
+        btn.classList.add("bg-blue-500", "text-white");
+        activeLetterBtn = btn;
+
+        loadWords(letter);
+    };
+
     alphabetDiv.appendChild(btn);
 });
 
-/* UŽKRAUNAM ŽODŽIUS */
+/* ŽODŽIAI PAGAL RAIDĘ – TIK JSON, JOKIO DI */
 async function loadWords(letter) {
-    wordsDiv.innerHTML = "Kraunama...";
+    wordsDiv.innerHTML = "";
     explanationDiv.classList.add("hidden");
 
     const res = await fetch(`/api/words?letter=${letter}`);
-    const data = await res.json();
+    const words = await res.json();
 
-    wordsDiv.innerHTML = "";
+    if (!words.length) {
+        wordsDiv.innerHTML =
+            "<div class='italic opacity-70'>Žodžių nėra</div>";
+        return;
+    }
 
-    data.forEach(word => {
+    words.forEach(word => {
         const btn = document.createElement("button");
         btn.textContent = word;
-        btn.className = "text-left p-2 bg-white dark:bg-gray-800 rounded hover:bg-blue-100 dark:hover:bg-gray-700";
+        btn.className = `
+            text-left p-2 rounded
+            bg-white dark:bg-gray-800
+            hover:bg-blue-100 dark:hover:bg-gray-700
+            transition
+        `;
         btn.onclick = () => explainWord(word);
         wordsDiv.appendChild(btn);
     });
 }
 
-/* PAAIŠKINIMAS */
+/* PAAIŠKINIMAS – DI NAUDOJAMAS TIK ČIA */
 async function explainWord(word) {
     const apiKey = apiKeyInput.value.trim();
     if (!apiKey) {
-        alert("Įveskite API raktą");
+        alert("Įveskite DI API raktą");
         return;
     }
 
     explanationDiv.classList.remove("hidden");
-    explanationDiv.innerHTML = "Sirvydas mąsto…";
+    explanationDiv.innerHTML = "<span class='italic'>Sirvydas mąsto…</span>";
 
     const res = await fetch("/api/explain", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey, word })
     });
 
